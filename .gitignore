@@ -1,0 +1,25 @@
+# venv
+.venv/
+
+# python cache
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# env / secrets
+.env
+
+# OS / IDE
+.DS_Store
+.vscode/
+.idea/
+
+# keys / certs
+*.pem
+*.key
+*.p12
+*.pfx
+id_rsa
+
+# local db files
+*.sqlite3
