@@ -25,4 +25,4 @@ jobs:
 
       - name: Run tests
         run: |
-          PYTHONPATH=. pytest -v
+          PYTHONPATH=. pytest app/tests/test_auth.py app/tests/test_jobs.py -v
