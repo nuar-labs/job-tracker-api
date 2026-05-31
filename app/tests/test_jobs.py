@@ -178,3 +178,73 @@ def test_delete_job(client):
 
     get_response = client.get(f"/jobs/{job_id}", headers=headers)
     assert get_response.status_code == 404
+
+#new
+def test_other_user_cannot_get_job(client):
+    headers_user1 = create_user_and_token(client, "user1@example.com", "password123")
+
+    create_response = client.post(
+        "/jobs",
+        json={
+            "company": "Google",
+            "role": "Backend Engineer",
+            "link": "https://example.com/job",
+            "status": "applied",
+            "notes": "user1 job",
+        },
+        headers=headers_user1,
+    )
+    job_id = create_response.json()["id"]
+
+    headers_user2 = create_user_and_token(client, "user2@example.com", "password123")
+
+    response = client.get(f"/jobs/{job_id}", headers=headers_user2)
+    assert response.status_code == 404
+
+
+def test_other_user_cannot_update_job(client):
+    headers_user1 = create_user_and_token(client, "user1@example.com", "password123")
+
+    create_response = client.post(
+        "/jobs",
+        json={
+            "company": "Google",
+            "role": "Backend Engineer",
+            "link": "https://example.com/job",
+            "status": "applied",
+            "notes": "user1 job",
+        },
+        headers=headers_user1,
+    )
+    job_id = create_response.json()["id"]
+
+    headers_user2 = create_user_and_token(client, "user2@example.com", "password123")
+
+    response = client.patch(
+        f"/jobs/{job_id}",
+        json={"status": "interview", "notes": "hacked"},
+        headers=headers_user2,
+    )
+    assert response.status_code == 404
+
+
+def test_other_user_cannot_delete_job(client):
+    headers_user1 = create_user_and_token(client, "user1@example.com", "password123")
+
+    create_response = client.post(
+        "/jobs",
+        json={
+            "company": "Google",
+            "role": "Backend Engineer",
+            "link": "https://example.com/job",
+            "status": "applied",
+            "notes": "user1 job",
+        },
+        headers=headers_user1,
+    )
+    job_id = create_response.json()["id"]
+
+    headers_user2 = create_user_and_token(client, "user2@example.com", "password123")
+
+    response = client.delete(f"/jobs/{job_id}", headers=headers_user2)
+    assert response.status_code == 404
