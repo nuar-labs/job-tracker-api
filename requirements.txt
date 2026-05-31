@@ -7,10 +7,10 @@ alembic
 
 python-jose[cryptography]
 passlib[bcrypt]
+bcrypt==3.2.2
 pydantic-settings
+email-validator
+python-multipart
 
 pytest
 httpx
-email-validator
-bcrypt==3.2.2
-python-multipart

@@ -1,25 +1,25 @@
-# venv
+# virtual environment
 .venv/
 
-# python cache
+# Python cache
 __pycache__/
 *.pyc
 .pytest_cache/
 
-# env / secrets
-.env 
+# environment / secrets
+.env
 
-# OS / IDE
+# OS / editor
 .DS_Store
 .vscode/
 .idea/
 
-# keys / certs
+# keys / certificates
 *.pem
 *.key
 *.p12
 *.pfx
 id_rsa
 
-# local db files
+# local database files
 *.sqlite3
