@@ -1,9 +1,11 @@
+import pytest
+from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
-from fastapi.testclient import TestClient
 
 from app.api.deps import get_db
+from app.db import models  # noqa: F401
 from app.db.base import Base
 from app.main import app
 
@@ -15,7 +17,11 @@ engine = create_engine(
     poolclass=StaticPool,
 )
 
-TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+TestingSessionLocal = sessionmaker(
+    autocommit=False,
+    autoflush=False,
+    bind=engine,
+)
 
 
 def override_get_db():
@@ -26,18 +32,21 @@ def override_get_db():
         db.close()
 
 
-app.dependency_overrides[get_db] = override_get_db
-
-
-def setup_function():
+@pytest.fixture
+def client():
     Base.metadata.drop_all(bind=engine)
     Base.metadata.create_all(bind=engine)
 
+    app.dependency_overrides[get_db] = override_get_db
 
-client = TestClient(app)
+    with TestClient(app) as test_client:
+        yield test_client
+
+    app.dependency_overrides.clear()
+    Base.metadata.drop_all(bind=engine)
 
 
-def test_register():
+def test_register(client):
     response = client.post(
         "/auth/register",
         json={"email": "test@example.com", "password": "password123"},
@@ -48,7 +57,7 @@ def test_register():
     assert "id" in data
 
 
-def test_login():
+def test_login(client):
     client.post(
         "/auth/register",
         json={"email": "test@example.com", "password": "password123"},
@@ -64,7 +73,7 @@ def test_login():
     assert data["token_type"] == "bearer"
 
 
-def test_me():
+def test_me(client):
     client.post(
         "/auth/register",
         json={"email": "test@example.com", "password": "password123"},

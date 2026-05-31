@@ -1,9 +1,11 @@
+import pytest
+from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
-from fastapi.testclient import TestClient
 
 from app.api.deps import get_db
+from app.db import models  # noqa: F401
 from app.db.base import Base
 from app.main import app
 
@@ -15,7 +17,11 @@ engine = create_engine(
     poolclass=StaticPool,
 )
 
-TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+TestingSessionLocal = sessionmaker(
+    autocommit=False,
+    autoflush=False,
+    bind=engine,
+)
 
 
 def override_get_db():
@@ -26,18 +32,21 @@ def override_get_db():
         db.close()
 
 
-app.dependency_overrides[get_db] = override_get_db
-
-
-def setup_function():
+@pytest.fixture
+def client():
     Base.metadata.drop_all(bind=engine)
     Base.metadata.create_all(bind=engine)
 
+    app.dependency_overrides[get_db] = override_get_db
 
-client = TestClient(app)
+    with TestClient(app) as test_client:
+        yield test_client
+
+    app.dependency_overrides.clear()
+    Base.metadata.drop_all(bind=engine)
 
 
-def create_user_and_token(email="test@example.com", password="password123"):
+def create_user_and_token(client, email="test@example.com", password="password123"):
     client.post(
         "/auth/register",
         json={"email": email, "password": password},
@@ -50,8 +59,8 @@ def create_user_and_token(email="test@example.com", password="password123"):
     return {"Authorization": f"Bearer {token}"}
 
 
-def test_create_job():
-    headers = create_user_and_token()
+def test_create_job(client):
+    headers = create_user_and_token(client)
 
     response = client.post(
         "/jobs",
@@ -73,8 +82,8 @@ def test_create_job():
     assert "id" in data
 
 
-def test_list_jobs():
-    headers = create_user_and_token()
+def test_list_jobs(client):
+    headers = create_user_and_token(client)
 
     client.post(
         "/jobs",
@@ -96,8 +105,8 @@ def test_list_jobs():
     assert data[0]["company"] == "Google"
 
 
-def test_get_job():
-    headers = create_user_and_token()
+def test_get_job(client):
+    headers = create_user_and_token(client)
 
     create_response = client.post(
         "/jobs",
@@ -120,8 +129,8 @@ def test_get_job():
     assert data["company"] == "Google"
 
 
-def test_update_job():
-    headers = create_user_and_token()
+def test_update_job(client):
+    headers = create_user_and_token(client)
 
     create_response = client.post(
         "/jobs",
@@ -148,8 +157,8 @@ def test_update_job():
     assert data["notes"] == "updated"
 
 
-def test_delete_job():
-    headers = create_user_and_token()
+def test_delete_job(client):
+    headers = create_user_and_token(client)
 
     create_response = client.post(
         "/jobs",
